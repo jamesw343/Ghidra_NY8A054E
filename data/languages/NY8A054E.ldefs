@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<language_definitions>
+
+    <language processor="NY8A054E"
+              endian="big"
+              size="8"
+              variant="default"
+              version="1.0"
+              slafile="NY8A054E.sla"
+              processorspec="NY8A054E.pspec"
+              id="NY8A054E:BE:8:default">
+        <description>Nyquest NY8A054E</description>
+        <compiler name="default" spec="NY8A054E.cspec" id="default"/>
+    </language>
+
+</language_definitions>

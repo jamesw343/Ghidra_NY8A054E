@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<processor_spec>
+
+    <programcounter register="PC" />
+
+    <volatile outputop="write_volatile" inputop="read_volatile">
+        <range space="S_PAGE" first="0x00" last="0x1F" />
+        <range space="F_PAGE" first="0x00" last="0x0F" />
+        <range space="R_PAGE0" first="0x00" last="0x1F" />
+        <range space="register" first="0x5000" last="0x5000" />
+    </volatile>
+
+    <default_symbols>
+        <!-- S-Page SFRs -->
+        <symbol name="TMR1"     address="S_PAGE:00" />
+        <symbol name="T1CR1"    address="S_PAGE:01" />
+        <symbol name="T1CR2"    address="S_PAGE:02" />
+        <symbol name="PWM1DUTY" address="S_PAGE:03" />
+        <symbol name="PS1CV"    address="S_PAGE:04" />
+        <symbol name="BZ1CR"    address="S_PAGE:05" />
+        <symbol name="IRCR"     address="S_PAGE:06" />
+        <symbol name="TBHP"     address="S_PAGE:07" />
+        <symbol name="TBHD"     address="S_PAGE:08" />
+        <symbol name="P2CR1"    address="S_PAGE:0a" />
+        <symbol name="PWM2DUTY" address="S_PAGE:0c" />
+        <symbol name="OSCCR"    address="S_PAGE:0f" />
+        <symbol name="TMR3"     address="S_PAGE:10" />
+        <symbol name="T3CR1"    address="S_PAGE:11" />
+        <symbol name="T3CR2"    address="S_PAGE:12" />
+        <symbol name="PWM3DUTY" address="S_PAGE:13" />
+        <symbol name="PS3CV"    address="S_PAGE:14" />
+        <symbol name="P4CR1"    address="S_PAGE:16" />
+        <symbol name="PWM4DUTY" address="S_PAGE:18" />
+        <symbol name="P5CR1"    address="S_PAGE:1b" />
+        <symbol name="PWM5DUTY" address="S_PAGE:1d" />
+        <symbol name="PWM5RH"   address="S_PAGE:1f" />
+
+        <!-- F-Page SFRs -->
+        <symbol name="IOSTA"    address="F_PAGE:05" />
+        <symbol name="IOSTB"    address="F_PAGE:06" />
+        <symbol name="APHCON"   address="F_PAGE:09" />
+        <symbol name="PS0CV"    address="F_PAGE:0a" />
+        <symbol name="BODCON"   address="F_PAGE:0c" />
+        <symbol name="CMPCR"    address="F_PAGE:0e" />
+        <symbol name="PCON1"    address="F_PAGE:0f" />
+
+        <!-- R-Page SFRs -->
+        <symbol name="INDF"     address="R_PAGE0:00" />
+        <symbol name="TMR0"     address="R_PAGE0:01" />
+        <symbol name="PCL"      address="R_PAGE0:02" />
+        <symbol name="STATUS"   address="R_PAGE0:03" />
+        <symbol name="FSR"      address="R_PAGE0:04" />
+        <symbol name="PORTA"    address="R_PAGE0:05" />
+        <symbol name="PORTB"    address="R_PAGE0:06" />
+        <symbol name="PCON"     address="R_PAGE0:08" />
+        <symbol name="BWUCON"   address="R_PAGE0:09" />
+        <symbol name="PCHBUF"   address="R_PAGE0:0a" />
+        <symbol name="ABPLCON"  address="R_PAGE0:0b" />
+        <symbol name="BPHCON"   address="R_PAGE0:0c" />
+        <symbol name="INTE"     address="R_PAGE0:0e" />
+        <symbol name="INTF"     address="R_PAGE0:0f" />
+        <symbol name="AWUCON"   address="R_PAGE0:15" />
+        <symbol name="INTEDG"   address="R_PAGE0:18" />
+        <symbol name="TMRH"     address="R_PAGE0:19" />
+        <symbol name="RFC"      address="R_PAGE0:1b" />
+        <symbol name="TM34RH"   address="R_PAGE0:1c" />
+        <symbol name="INTE2"    address="R_PAGE0:1f" />
+
+        <!-- R-Page GPRs -->
+        <symbol name="GPR20_0"  address="R_PAGE0:20" />
+        <symbol name="GPR21_0"  address="R_PAGE0:21" />
+        <symbol name="GPR22_0"  address="R_PAGE0:22" />
+        <symbol name="GPR23_0"  address="R_PAGE0:23" />
+        <symbol name="GPR24_0"  address="R_PAGE0:24" />
+        <symbol name="GPR25_0"  address="R_PAGE0:25" />
+        <symbol name="GPR26_0"  address="R_PAGE0:26" />
+        <symbol name="GPR27_0"  address="R_PAGE0:27" />
+        <symbol name="GPR28_0"  address="R_PAGE0:28" />
+        <symbol name="GPR29_0"  address="R_PAGE0:29" />
+        <symbol name="GPR2A_0"  address="R_PAGE0:2a" />
+        <symbol name="GPR2B_0"  address="R_PAGE0:2b" />
+        <symbol name="GPR2C_0"  address="R_PAGE0:2c" />
+        <symbol name="GPR2D_0"  address="R_PAGE0:2d" />
+        <symbol name="GPR2E_0"  address="R_PAGE0:2e" />
+        <symbol name="GPR2F_0"  address="R_PAGE0:2f" />
+        <symbol name="GPR30_0"  address="R_PAGE0:30" />
+        <symbol name="GPR31_0"  address="R_PAGE0:31" />
+        <symbol name="GPR32_0"  address="R_PAGE0:32" />
+        <symbol name="GPR33_0"  address="R_PAGE0:33" />
+        <symbol name="GPR34_0"  address="R_PAGE0:34" />
+        <symbol name="GPR35_0"  address="R_PAGE0:35" />
+        <symbol name="GPR36_0"  address="R_PAGE0:36" />
+        <symbol name="GPR37_0"  address="R_PAGE0:37" />
+        <symbol name="GPR38_0"  address="R_PAGE0:38" />
+        <symbol name="GPR39_0"  address="R_PAGE0:39" />
+        <symbol name="GPR3A_0"  address="R_PAGE0:3a" />
+        <symbol name="GPR3B_0"  address="R_PAGE0:3b" />
+        <symbol name="GPR3C_0"  address="R_PAGE0:3c" />
+        <symbol name="GPR3D_0"  address="R_PAGE0:3d" />
+        <symbol name="GPR3E_0"  address="R_PAGE0:3e" />
+        <symbol name="GPR3F_0"  address="R_PAGE0:3f" />
+        <symbol name="GPR40_0"  address="R_PAGE0:40" />
+        <symbol name="GPR41_0"  address="R_PAGE0:41" />
+        <symbol name="GPR42_0"  address="R_PAGE0:42" />
+        <symbol name="GPR43_0"  address="R_PAGE0:43" />
+        <symbol name="GPR44_0"  address="R_PAGE0:44" />
+        <symbol name="GPR45_0"  address="R_PAGE0:45" />
+        <symbol name="GPR46_0"  address="R_PAGE0:46" />
+        <symbol name="GPR47_0"  address="R_PAGE0:47" />
+        <symbol name="GPR48_0"  address="R_PAGE0:48" />
+        <symbol name="GPR49_0"  address="R_PAGE0:49" />
+        <symbol name="GPR4A_0"  address="R_PAGE0:4a" />
+        <symbol name="GPR4B_0"  address="R_PAGE0:4b" />
+        <symbol name="GPR4C_0"  address="R_PAGE0:4c" />
+        <symbol name="GPR4D_0"  address="R_PAGE0:4d" />
+        <symbol name="GPR4E_0"  address="R_PAGE0:4e" />
+        <symbol name="GPR4F_0"  address="R_PAGE0:4f" />
+        <symbol name="GPR50_0"  address="R_PAGE0:50" />
+        <symbol name="GPR51_0"  address="R_PAGE0:51" />
+        <symbol name="GPR52_0"  address="R_PAGE0:52" />
+        <symbol name="GPR53_0"  address="R_PAGE0:53" />
+        <symbol name="GPR54_0"  address="R_PAGE0:54" />
+        <symbol name="GPR55_0"  address="R_PAGE0:55" />
+        <symbol name="GPR56_0"  address="R_PAGE0:56" />
+        <symbol name="GPR57_0"  address="R_PAGE0:57" />
+        <symbol name="GPR58_0"  address="R_PAGE0:58" />
+        <symbol name="GPR59_0"  address="R_PAGE0:59" />
+        <symbol name="GPR5A_0"  address="R_PAGE0:5a" />
+        <symbol name="GPR5B_0"  address="R_PAGE0:5b" />
+        <symbol name="GPR5C_0"  address="R_PAGE0:5c" />
+        <symbol name="GPR5D_0"  address="R_PAGE0:5d" />
+        <symbol name="GPR5E_0"  address="R_PAGE0:5e" />
+        <symbol name="GPR5F_0"  address="R_PAGE0:5f" />
+        <symbol name="GPR60_0"  address="R_PAGE0:60" />
+        <symbol name="GPR61_0"  address="R_PAGE0:61" />
+        <symbol name="GPR62_0"  address="R_PAGE0:62" />
+        <symbol name="GPR63_0"  address="R_PAGE0:63" />
+        <symbol name="GPR64_0"  address="R_PAGE0:64" />
+        <symbol name="GPR65_0"  address="R_PAGE0:65" />
+        <symbol name="GPR66_0"  address="R_PAGE0:66" />
+        <symbol name="GPR67_0"  address="R_PAGE0:67" />
+        <symbol name="GPR68_0"  address="R_PAGE0:68" />
+        <symbol name="GPR69_0"  address="R_PAGE0:69" />
+        <symbol name="GPR6A_0"  address="R_PAGE0:6a" />
+        <symbol name="GPR6B_0"  address="R_PAGE0:6b" />
+        <symbol name="GPR6C_0"  address="R_PAGE0:6c" />
+        <symbol name="GPR6D_0"  address="R_PAGE0:6d" />
+        <symbol name="GPR6E_0"  address="R_PAGE0:6e" />
+        <symbol name="GPR6F_0"  address="R_PAGE0:6f" />
+        <symbol name="GPR70_0"  address="R_PAGE0:70" />
+        <symbol name="GPR71_0"  address="R_PAGE0:71" />
+        <symbol name="GPR72_0"  address="R_PAGE0:72" />
+        <symbol name="GPR73_0"  address="R_PAGE0:73" />
+        <symbol name="GPR74_0"  address="R_PAGE0:74" />
+        <symbol name="GPR75_0"  address="R_PAGE0:75" />
+        <symbol name="GPR76_0"  address="R_PAGE0:76" />
+        <symbol name="GPR77_0"  address="R_PAGE0:77" />
+        <symbol name="GPR78_0"  address="R_PAGE0:78" />
+        <symbol name="GPR79_0"  address="R_PAGE0:79" />
+        <symbol name="GPR7A_0"  address="R_PAGE0:7a" />
+        <symbol name="GPR7B_0"  address="R_PAGE0:7b" />
+        <symbol name="GPR7C_0"  address="R_PAGE0:7c" />
+        <symbol name="GPR7D_0"  address="R_PAGE0:7d" />
+        <symbol name="GPR7E_0"  address="R_PAGE0:7e" />
+        <symbol name="GPR7F_0"  address="R_PAGE0:7f" />
+        <symbol name="GPR20_1"  address="R_PAGE1:20" />
+        <symbol name="GPR21_1"  address="R_PAGE1:21" />
+        <symbol name="GPR22_1"  address="R_PAGE1:22" />
+        <symbol name="GPR23_1"  address="R_PAGE1:23" />
+        <symbol name="GPR24_1"  address="R_PAGE1:24" />
+        <symbol name="GPR25_1"  address="R_PAGE1:25" />
+        <symbol name="GPR26_1"  address="R_PAGE1:26" />
+        <symbol name="GPR27_1"  address="R_PAGE1:27" />
+        <symbol name="GPR28_1"  address="R_PAGE1:28" />
+        <symbol name="GPR29_1"  address="R_PAGE1:29" />
+        <symbol name="GPR2A_1"  address="R_PAGE1:2a" />
+        <symbol name="GPR2B_1"  address="R_PAGE1:2b" />
+        <symbol name="GPR2C_1"  address="R_PAGE1:2c" />
+        <symbol name="GPR2D_1"  address="R_PAGE1:2d" />
+        <symbol name="GPR2E_1"  address="R_PAGE1:2e" />
+        <symbol name="GPR2F_1"  address="R_PAGE1:2f" />
+        <symbol name="GPR30_1"  address="R_PAGE1:30" />
+        <symbol name="GPR31_1"  address="R_PAGE1:31" />
+        <symbol name="GPR32_1"  address="R_PAGE1:32" />
+        <symbol name="GPR33_1"  address="R_PAGE1:33" />
+        <symbol name="GPR34_1"  address="R_PAGE1:34" />
+        <symbol name="GPR35_1"  address="R_PAGE1:35" />
+        <symbol name="GPR36_1"  address="R_PAGE1:36" />
+        <symbol name="GPR37_1"  address="R_PAGE1:37" />
+        <symbol name="GPR38_1"  address="R_PAGE1:38" />
+        <symbol name="GPR39_1"  address="R_PAGE1:39" />
+        <symbol name="GPR3A_1"  address="R_PAGE1:3a" />
+        <symbol name="GPR3B_1"  address="R_PAGE1:3b" />
+        <symbol name="GPR3C_1"  address="R_PAGE1:3c" />
+        <symbol name="GPR3D_1"  address="R_PAGE1:3d" />
+        <symbol name="GPR3E_1"  address="R_PAGE1:3e" />
+        <symbol name="GPR3F_1"  address="R_PAGE1:3f" />
+    </default_symbols>
+
+    <default_memory_blocks>
+        <memory_block name="F_PAGE" start_address="F_PAGE:00" length="0x20" initialized="false" />
+        <memory_block name="S_PAGE" start_address="S_PAGE:00" length="0x20" initialized="false" />
+        <memory_block name="R_PAGE0" start_address="R_PAGE0:00" length="0x80" initialized="false" />
+        <memory_block name="R_PAGE1" start_address="R_PAGE1:20" length="0x20" initialized="false" />
+    </default_memory_blocks>
+  
+</processor_spec>

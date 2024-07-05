@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<compiler_spec>
+    <global>
+        <range space="EPROM" />
+        <range space="S_PAGE" />
+        <range space="F_PAGE" />
+        <range space="R_PAGE0" />
+        <range space="R_PAGE1" />
+    </global>
+    <stackpointer register="SP" space="_stack" growth="positive" />
+    <default_proto>
+        <prototype name="__stdcall" extrapop="2" stackshift="2">
+            <input>
+                <pentry minsize="1" maxsize="1"><register name="ACC" /></pentry>
+            </input>
+            <output>
+                <pentry minsize="1" maxsize="1"><register name="ACC" /></pentry>
+            </output>
+            <localrange>
+                <range space="stack" first="0x00" last="0x07" />
+            </localrange>
+        </prototype>
+    </default_proto>
+</compiler_spec>

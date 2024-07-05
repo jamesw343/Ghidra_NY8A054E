@@ -1,0 +1,548 @@
+define endian=big;
+define alignment=2;
+
+define space EPROM      type=ram_space      size=2 wordsize=2 default;
+define space S_PAGE     type=ram_space      size=1 wordsize=1;
+define space F_PAGE     type=ram_space      size=1 wordsize=1;
+define space R_PAGE0    type=ram_space      size=1 wordsize=1; # Physical storage for SFR + GPR
+define space R_PAGE1    type=ram_space      size=1 wordsize=1; # Physical storage for GPR (cont'd)
+define space register   type=register_space size=4 wordsize=1;
+define space _stack     type=ram_space      size=1 wordsize=2;
+
+define S_PAGE   offset=0x07   size=1 [ TBHP TBHD ];
+
+define register offset=0x1000 size=1 [ SP ACC ];
+define register offset=0x2000 size=2 [ PC ];
+define register offset=0x3000 size=4 [ CONTEXT_REG ];
+define register offset=0x4000 size=1 [ STATUS_C STATUS_DC STATUS_Z ]; # Pseudo-registers
+define register offset=0x5000 size=1 [ T0MD ]; # ATTN: must be at 0x5000 defined volatile in pspec!
+
+define pcodeop clear_watchdog_timer;
+define pcodeop disable_interrupts;
+define pcodeop enable_interrupts;
+define pcodeop nop;
+define pcodeop sleep;
+define pcodeop daa;
+
+# TODO: currently context switching not implemented/supported!
+define context CONTEXT_REG
+    CONTEXT_BK = (0,1)          # Register bank selection
+;
+
+define token opword (16)
+    zero  = (14,15)
+    op14  = (0,13)
+    op10  = (4,13)
+    op9   = (5,13)
+    op7   = (7,13)
+    op6   = (8,13)
+    op5   = (9,13)
+    op4   = (10,13)
+    op3   = (11,13)
+    fr    = (0,3)       # F-Page
+    sr    = (0,4)       # S-Page
+    rr0   = (0,6)       # R-Page bank 0
+    rr1   = (0,6)       # R-Page bank 1
+    rr2   = (0,6)       # R-Page bank 2
+    rr3   = (0,6)       # R-Page bank 3
+    d     = (7,7)       # destination bit
+    bs    = (7,9)       # bit select
+    imm11 = (0,10)
+    imm9  = (0,8)
+    imm8  = (0,7)
+;
+
+attach names d [ "ToAcc" "ToReg" ];
+attach names bs [ "bit 0" "bit 1" "bit 2" "bit 3" "bit 4" "bit 5" "bit 6" "bit 7" ];
+
+addr8: imm8             is imm8 { export *[EPROM]:2 imm8; }
+addr9: rlimm9           is imm9 [ rlimm9 = (inst_next & 0x300) + imm9; ] { export *[EPROM]:2 rlimm9; }
+addr11: imm11           is imm11 { export *[EPROM]:2 imm11; }
+
+FReg: fr                is fr { export *[F_PAGE]:1 fr; }
+SReg: sr                is sr { export *[S_PAGE]:1 sr; }
+
+RReg: rr0               is CONTEXT_BK=0 & rr0
+{
+    export *[R_PAGE0]:1 rr0;
+}
+RReg: rr1               is CONTEXT_BK=1 & rr1
+{
+    addr:1 = rr1;
+    if (addr >= 0x20 && addr <= 0x3F) goto <export_rpage1>;
+        export *[R_PAGE0]:1 addr;
+        goto <done>;
+    <export_rpage1>
+        export *[R_PAGE1]:1 addr;
+    <done>
+}
+RReg: rr2               is CONTEXT_BK=2 & rr2
+{
+    export *[R_PAGE0]:1 rr2;
+}
+RReg: rr3               is CONTEXT_BK=3 & rr3
+{
+    addr:1 = rr3;
+    if (addr >= 0x20 && addr <= 0x3F) goto <export_rpage1>;
+        export *[R_PAGE0]:1 addr;
+        goto <done>;
+    <export_rpage1>
+        export *[R_PAGE1]:1 addr;
+    <done>
+}
+
+DestAR: d               is d { val:1 = d; export val; }
+
+
+
+# TODO: ADCAR, SBCAR?
+
+:ADCIA imm8             is zero=0 & op6=38 & imm8
+{
+    ires:1 = ACC + imm8;
+    res:1 = ires + STATUS_C;
+
+    STATUS_Z = ACC == 0;
+    STATUS_C = carry(ACC, imm8) || carry(ires, STATUS_C);
+
+    imm8_4:1 = imm8 << 4;
+    ACC_4:1 = ACC << 4;
+    ires_4:1 = ACC_4 + imm8_4;
+    STATUS_DC = carry(ACC_4, imm8_4) || carry(ires_4, STATUS_C << 4);
+
+    ACC = res;
+}
+
+:ADDAR RReg,DestAR      is zero=0 & op6=3 & RReg & DestAR
+{
+    result:1 = ACC + RReg;
+
+    STATUS_Z = result == 0;
+    STATUS_C = carry(ACC, RReg);
+    STATUS_DC = carry(ACC << 4, RReg << 4);
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:ADDIA imm8             is zero=0 & op6=37 & imm8
+{
+    result:1 = ACC + imm8;
+
+    STATUS_Z = result == 0;
+    STATUS_C = carry(ACC, imm8);
+    STATUS_DC = carry(ACC << 4, imm8 << 4);
+
+    ACC = result;
+}
+
+:ANDAR RReg,DestAR      is zero=0 & op6=16 & RReg & DestAR
+{
+    result:1 = ACC & RReg;
+
+    STATUS_Z = result == 0;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:ANDIA imm8             is zero=0 & op6=34 & imm8
+{
+    ACC = ACC & imm8;
+    STATUS_Z = ACC == 0;
+}
+
+:BCR^"_C"               is zero=0 & op4=7 & rr0=3 & bs=0 { STATUS_C  = 0; }
+:BCR^"_DC"              is zero=0 & op4=7 & rr0=3 & bs=1 { STATUS_DC = 0; }
+:BCR^"_Z"               is zero=0 & op4=7 & rr0=3 & bs=2 { STATUS_Z  = 0; }
+:BCR RReg,bs            is zero=0 & op4=7 & RReg & bs
+{
+    RReg = RReg & ~(1 << bs);
+}
+
+:BSR^"_C"               is zero=0 & op4=6 & rr0=3 & bs=0 { STATUS_C  = 1; }
+:BSR^"_DC"              is zero=0 & op4=6 & rr0=3 & bs=1 { STATUS_DC = 1; }
+:BSR^"_Z"               is zero=0 & op4=6 & rr0=3 & bs=2 { STATUS_Z  = 1; }
+:BSR RReg,bs            is zero=0 & op4=6 & RReg & bs
+{
+    RReg = RReg | (1 << bs);
+}
+
+# Test bit in rr, skip next instruction if clear
+:BTRSC^"_C"             is zero=0 & op4=3 & rr0=3 & bs=0 { if (STATUS_C == 0)  goto inst_next2; }
+:BTRSC^"_DC"            is zero=0 & op4=3 & rr0=3 & bs=1 { if (STATUS_DC == 0) goto inst_next2; }
+:BTRSC^"_Z"             is zero=0 & op4=3 & rr0=3 & bs=2 { if (STATUS_Z == 0)  goto inst_next2; }
+:BTRSC RReg,bs          is zero=0 & op4=3 & RReg & bs
+{
+    if ((RReg & (1 << bs)) == 0) goto inst_next2;
+}
+
+# Test bit in rr, skip next instruction if set
+:BTRSS^"_C"             is zero=0 & op4=2 & rr0=3 & bs=0 { if (STATUS_C != 0)  goto inst_next2; }
+:BTRSS^"_DC"            is zero=0 & op4=2 & rr0=3 & bs=1 { if (STATUS_DC != 0) goto inst_next2; }
+:BTRSS^"_Z"             is zero=0 & op4=2 & rr0=3 & bs=2 { if (STATUS_Z != 0)  goto inst_next2; }
+:BTRSS RReg,bs          is zero=0 & op4=2 & RReg & bs
+{
+    if ((RReg & (1 << bs)) != 0) goto inst_next2;
+}
+
+:CALL addr8             is zero=0 & op6=49 & addr8
+{
+    call addr8;
+}
+
+:CALLA                  is zero=0 & op14=530
+{
+    abs_addr:2 = (inst_next & 0x380) + zext(ACC);
+    call [abs_addr];
+}
+
+:CLRA                   is zero=0 & op14=512
+{
+    ACC = 0;
+    STATUS_Z = 1;
+}
+
+:CLRR RReg              is zero=0 & op7=5 & RReg
+{
+    RReg = 0;
+    STATUS_Z = 1;
+}
+
+:CLRWDT                 is zero=0 & op14=2
+{
+    clear_watchdog_timer();
+}
+
+:COMR RReg,DestAR       is zero=0 & op6=7 & RReg & DestAR
+{
+    result:1 = ~RReg;
+
+    STATUS_Z = result == 0;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:CMPAR RReg             is zero=0 & op7=109 & RReg
+{
+    STATUS_Z = ACC == RReg;
+    STATUS_C = RReg >= ACC;
+}
+
+# Convert ACC(hex) -> ACC(dec) immediately following an ADD operation
+:DAA                    is zero=0 & op14=18
+{
+    daa(ACC);
+}
+
+:DECR RReg,DestAR       is zero=0 & op6=6 & RReg & DestAR
+{
+    result:1 = RReg - 1;
+
+    STATUS_Z = result == 0;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+# Decrease rr, store result in rr or ACC, skip next instruction if result is 0
+:DECRSZ RReg,DestAR     is zero=0 & op6=23 & RReg & DestAR
+{
+    result:1 = RReg - 1;
+
+    if (DestAR == 1) goto <inc_rr>;
+        ACC = result;
+        goto <check_res>;
+    <inc_rr>
+        RReg = result;
+    
+    <check_res>
+    if (result == 0) goto inst_next2;
+}
+
+:DISI                   is zero=0 & op14=19
+{
+    disable_interrupts();
+}
+
+:ENI                    is zero=0 & op14=4
+{
+    enable_interrupts();
+}
+
+:GOTO addr9             is zero=0 & op5=25 & addr9
+{
+    goto addr9;
+}
+
+:GOTOA                  is zero=0 & op14=531
+{
+    abs_addr:2 = (inst_next & 0x380) + zext(ACC);
+    goto [abs_addr];
+}
+
+:INCR RReg,DestAR       is zero=0 & op6=5 & RReg & DestAR
+{
+    result:1 = RReg + 1;
+
+    STATUS_Z = result == 0;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+# Increase rr, store result in rr or ACC, skip next instruction if result is 0
+:INCRSZ RReg,DestAR     is zero=0 & op6=22 & RReg & DestAR
+{
+    result:1 = RReg + 1;
+
+    if (DestAR == 1) goto <inc_rr>;
+        ACC = result;
+        goto <check_res>;
+    <inc_rr>
+        RReg = result;
+    
+    <check_res>
+    if (result == 0) goto inst_next2;
+}
+
+:INT                    is zero=0 & op14=528
+{
+    swvec:2 = 0x002;
+    call [swvec];
+}
+
+:IORAR RReg,DestAR      is zero=0 & op6=17 & RReg & DestAR
+{
+    result:1 = ACC | RReg;
+
+    STATUS_Z = result == 0;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:IORIA imm8             is zero=0 & op6=35 & imm8
+{
+    ACC = ACC | imm8;
+    STATUS_Z = ACC == 0;
+}
+
+:IOST FReg              is zero=0 & op10=0 & FReg
+{
+    FReg = ACC;
+}
+
+:IOSTR FReg             is zero=0 & op10=1 & FReg
+{
+    ACC = FReg;
+}
+
+:LCALL addr11           is zero=0 & op3=5 & addr11
+{
+    call addr11;
+}
+
+:LGOTO addr11           is zero=0 & op3=7 & addr11
+{
+    goto addr11;
+}
+
+:MOVAR RReg             is zero=0 & op7=1 & RReg
+{
+    RReg = ACC;
+}
+
+:MOVIA imm8             is zero=0 & op6=33 & imm8
+{
+    ACC = imm8;
+}
+
+:MOVR RReg,DestAR       is zero=0 & op6=1 & RReg & DestAR
+{
+    if (DestAR == 1) goto <reg>;
+        ACC = RReg;
+        goto <done>;
+    <reg>
+        RReg = RReg;
+    <done>
+
+    STATUS_Z = RReg == 0;
+}
+
+:NOP                    is zero=0 & op14=0
+{
+    nop();
+}
+
+:RETIE                  is zero=0 & op14=17
+{
+    ret_addr:2 = 0; # TODO: fix
+    return [ret_addr];
+}
+
+:RETIA imm8             is zero=0 & op6=32 & imm8
+{
+    ACC = imm8;
+    
+    ret_addr:2 = 0; # TODO: fix
+    return [ret_addr];
+}
+
+:RET                    is zero=0 & op14=16
+{
+    ret_addr:2 = 0; # TODO: fix
+    return [ret_addr];
+}
+
+:RLR RReg,DestAR        is zero=0 & op6=20 & RReg & DestAR
+{
+    result:1 = (RReg << 1) | STATUS_C;
+    STATUS_C = RReg >> 7;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:RRR RReg,DestAR        is zero=0 & op6=19 & RReg & DestAR
+{
+    result:1 = (RReg >> 1) | (STATUS_C << 7);
+    STATUS_C = RReg & 0x1;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:SBCIA imm8             is zero=0 & op6=48 & imm8
+{
+    result:1 = imm8 + (~ACC) + STATUS_C;
+
+    STATUS_Z = ACC == 0;
+    STATUS_C = imm8 >= ACC;
+    STATUS_DC = (imm8 & 0xF) > (ACC & 0xF);
+
+    ACC = result;
+}
+
+:SFUN SReg              is zero=0 & op9=2 & SReg
+{
+    SReg = ACC;
+}
+
+:SFUNR SReg             is zero=0 & op9=3 & SReg
+{
+    ACC = SReg;
+}
+
+:SLEEP                  is zero=0 & op14=1
+{
+    sleep();
+}
+
+:SUBAR RReg,DestAR      is zero=0 & op6=4 & RReg & DestAR
+{
+    result:1 = RReg - ACC;
+
+    STATUS_Z = result == 0;
+    STATUS_C = RReg >= ACC;
+    STATUS_DC = (RReg & 0xF) > (ACC & 0xF);
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:SUBIA imm8             is zero=0 & op6=39 & imm8
+{
+    result:1 = imm8 - ACC;
+
+    STATUS_Z = result == 0;
+    STATUS_C = imm8 >= ACC;
+    STATUS_DC = (imm8 & 0xF) > (ACC & 0xF);
+
+    ACC = result;
+}
+
+:SWAPR RReg,DestAR      is zero=0 & op6=21 & RReg & DestAR
+{
+    if (DestAR == 1) goto <reg>;
+        ACC = ((RReg >> 4) & 0x0F) | ((RReg << 4) & 0xF0);
+        goto <done>;
+    <reg>
+        RReg = ((RReg >> 4) & 0x0F) | ((RReg << 4) & 0xF0);
+    <done>
+}
+
+:TABLEA                 is zero=0 & op14=529
+{
+    addr:2 = (zext(TBHP & 0x7) << 8) + zext(ACC);
+    data = *[EPROM]:2 addr;
+    ACC = data:1;
+    TBHD = data(1);
+}
+
+:T0MD                   is zero=0 & op14=3
+{
+    T0MD = ACC;
+}
+
+:T0MDR                  is zero=0 & op14=20
+{
+    ACC = T0MD;
+}
+
+:XORAR RReg,DestAR      is zero=0 & op6=18 & RReg & DestAR
+{
+    result:1 = ACC ^ RReg;
+
+    STATUS_Z = result == 0;
+
+    if (DestAR == 1) goto <reg>;
+        ACC = result;
+        goto <done>;
+    <reg>
+        RReg = result;
+    <done>
+}
+
+:XORIA imm8             is zero=0 & op6=36 & imm8
+{
+    ACC = ACC ^ imm8;
+    STATUS_Z = ACC == 0;
+}
