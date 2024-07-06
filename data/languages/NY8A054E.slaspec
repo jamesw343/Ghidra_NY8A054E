@@ -9,6 +9,8 @@ define space R_PAGE1    type=ram_space      size=1 wordsize=1; # Physical storag
 define space register   type=register_space size=4 wordsize=1;
 define space _stack     type=ram_space      size=1 wordsize=2;
 
+define R_PAGE0  offset=0x00   size=1 [ INDF ];
+define R_PAGE0  offset=0x04   size=1 [ FSR ];
 define S_PAGE   offset=0x07   size=1 [ TBHP TBHD ];
 
 define register offset=0x1000 size=1 [ SP ACC ];
@@ -39,14 +41,11 @@ define token opword (16)
     op5   = (9,13)
     op4   = (10,13)
     op3   = (11,13)
-    fr    = (0,3)       # F-Page
-    sr    = (0,4)       # S-Page
-    rr0   = (0,6)       # R-Page bank 0
-    rr1   = (0,6)       # R-Page bank 1
-    rr2   = (0,6)       # R-Page bank 2
-    rr3   = (0,6)       # R-Page bank 3
-    d     = (7,7)       # destination bit
-    bs    = (7,9)       # bit select
+    fr    = (0,3)       # F-Page register index
+    sr    = (0,4)       # S-Page register index
+    rr    = (0,6)       # R-Page register index
+    d     = (7,7)       # Destination bit (Reg or ACC)
+    bs    = (7,9)       # Bit select
     imm11 = (0,10)
     imm9  = (0,8)
     imm8  = (0,7)
@@ -62,27 +61,28 @@ addr11: imm11           is imm11 { export *[EPROM]:2 imm11; }
 FReg: fr                is fr { export *[F_PAGE]:1 fr; }
 SReg: sr                is sr { export *[S_PAGE]:1 sr; }
 
-RReg: rr0               is CONTEXT_BK=0 & rr0
+RReg: rr                is (CONTEXT_BK=0 | CONTEXT_BK=2) & rr
 {
-    export *[R_PAGE0]:1 rr0;
+    addr:1 = rr;
+
+    if (addr != 0x00) goto <do_export>;
+        addr = FSR;
+    <do_export>
+
+    export *[R_PAGE0]:1 addr;
 }
-RReg: rr1               is CONTEXT_BK=1 & rr1
+RReg: rr                is (CONTEXT_BK=1 | CONTEXT_BK=3) & rr
 {
-    addr:1 = rr1;
-    if (addr >= 0x20 && addr <= 0x3F) goto <export_rpage1>;
-        export *[R_PAGE0]:1 addr;
-        goto <done>;
-    <export_rpage1>
-        export *[R_PAGE1]:1 addr;
-    <done>
-}
-RReg: rr2               is CONTEXT_BK=2 & rr2
-{
-    export *[R_PAGE0]:1 rr2;
-}
-RReg: rr3               is CONTEXT_BK=3 & rr3
-{
-    addr:1 = rr3;
+    addr:1 = rr;
+
+    if (addr != 0x00) goto <do_export>;
+        addr = FSR;
+    <do_export>
+
+    # In banks 1 and 3, 0x20-0x3F are mapped to storage in bank 1,
+    # while 0x40-0x7F are mapped to storage in bank 0. SFRs (0x00-0x1F)
+    # are always mapped to bank 0.
+
     if (addr >= 0x20 && addr <= 0x3F) goto <export_rpage1>;
         export *[R_PAGE0]:1 addr;
         goto <done>;
@@ -160,35 +160,35 @@ DestAR: d               is d { val:1 = d; export val; }
     STATUS_Z = ACC == 0;
 }
 
-:BCR^"_C"               is zero=0 & op4=7 & rr0=3 & bs=0 { STATUS_C  = 0; }
-:BCR^"_DC"              is zero=0 & op4=7 & rr0=3 & bs=1 { STATUS_DC = 0; }
-:BCR^"_Z"               is zero=0 & op4=7 & rr0=3 & bs=2 { STATUS_Z  = 0; }
+:BCR^"_C"               is zero=0 & op4=7 & rr=3 & bs=0 { STATUS_C  = 0; }
+:BCR^"_DC"              is zero=0 & op4=7 & rr=3 & bs=1 { STATUS_DC = 0; }
+:BCR^"_Z"               is zero=0 & op4=7 & rr=3 & bs=2 { STATUS_Z  = 0; }
 :BCR RReg,bs            is zero=0 & op4=7 & RReg & bs
 {
     RReg = RReg & ~(1 << bs);
 }
 
-:BSR^"_C"               is zero=0 & op4=6 & rr0=3 & bs=0 { STATUS_C  = 1; }
-:BSR^"_DC"              is zero=0 & op4=6 & rr0=3 & bs=1 { STATUS_DC = 1; }
-:BSR^"_Z"               is zero=0 & op4=6 & rr0=3 & bs=2 { STATUS_Z  = 1; }
+:BSR^"_C"               is zero=0 & op4=6 & rr=3 & bs=0 { STATUS_C  = 1; }
+:BSR^"_DC"              is zero=0 & op4=6 & rr=3 & bs=1 { STATUS_DC = 1; }
+:BSR^"_Z"               is zero=0 & op4=6 & rr=3 & bs=2 { STATUS_Z  = 1; }
 :BSR RReg,bs            is zero=0 & op4=6 & RReg & bs
 {
     RReg = RReg | (1 << bs);
 }
 
 # Test bit in rr, skip next instruction if clear
-:BTRSC^"_C"             is zero=0 & op4=3 & rr0=3 & bs=0 { if (STATUS_C == 0)  goto inst_next2; }
-:BTRSC^"_DC"            is zero=0 & op4=3 & rr0=3 & bs=1 { if (STATUS_DC == 0) goto inst_next2; }
-:BTRSC^"_Z"             is zero=0 & op4=3 & rr0=3 & bs=2 { if (STATUS_Z == 0)  goto inst_next2; }
+:BTRSC^"_C"             is zero=0 & op4=3 & rr=3 & bs=0 { if (STATUS_C == 0)  goto inst_next2; }
+:BTRSC^"_DC"            is zero=0 & op4=3 & rr=3 & bs=1 { if (STATUS_DC == 0) goto inst_next2; }
+:BTRSC^"_Z"             is zero=0 & op4=3 & rr=3 & bs=2 { if (STATUS_Z == 0)  goto inst_next2; }
 :BTRSC RReg,bs          is zero=0 & op4=3 & RReg & bs
 {
     if ((RReg & (1 << bs)) == 0) goto inst_next2;
 }
 
 # Test bit in rr, skip next instruction if set
-:BTRSS^"_C"             is zero=0 & op4=2 & rr0=3 & bs=0 { if (STATUS_C != 0)  goto inst_next2; }
-:BTRSS^"_DC"            is zero=0 & op4=2 & rr0=3 & bs=1 { if (STATUS_DC != 0) goto inst_next2; }
-:BTRSS^"_Z"             is zero=0 & op4=2 & rr0=3 & bs=2 { if (STATUS_Z != 0)  goto inst_next2; }
+:BTRSS^"_C"             is zero=0 & op4=2 & rr=3 & bs=0 { if (STATUS_C != 0)  goto inst_next2; }
+:BTRSS^"_DC"            is zero=0 & op4=2 & rr=3 & bs=1 { if (STATUS_DC != 0) goto inst_next2; }
+:BTRSS^"_Z"             is zero=0 & op4=2 & rr=3 & bs=2 { if (STATUS_Z != 0)  goto inst_next2; }
 :BTRSS RReg,bs          is zero=0 & op4=2 & RReg & bs
 {
     if ((RReg & (1 << bs)) != 0) goto inst_next2;
