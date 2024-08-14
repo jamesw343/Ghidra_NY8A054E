@@ -54,8 +54,8 @@ define token opword (16)
 attach names d [ "ToAcc" "ToReg" ];
 attach names bs [ "bit 0" "bit 1" "bit 2" "bit 3" "bit 4" "bit 5" "bit 6" "bit 7" ];
 
-addr8: imm8             is imm8 { export *[EPROM]:2 imm8; }
-addr9: rlimm9           is imm9 [ rlimm9 = (inst_next & 0x300) + imm9; ] { export *[EPROM]:2 rlimm9; }
+addr8: rlimm8           is imm8 [ rlimm8 = (inst_next & 0x700) + imm8; ] { export *[EPROM]:2 rlimm8; }
+addr9: rlimm9           is imm9 [ rlimm9 = (inst_next & 0x600) + imm9; ] { export *[EPROM]:2 rlimm9; }
 addr11: imm11           is imm11 { export *[EPROM]:2 imm11; }
 
 FReg: fr                is fr { export *[F_PAGE]:1 fr; }
